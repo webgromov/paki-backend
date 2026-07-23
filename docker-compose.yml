@@ -16,5 +16,18 @@ services:
       timeout: 5s
       retries: 5
 
+  centrifugo:
+    image: centrifugo/centrifugo:v6
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - ./infra/centrifugo/config.json:/centrifugo/config.json
+    command: centrifugo -c config.json
+    ports:
+      - "8000:8000"
+
 volumes:
   postgres_data:
