@@ -13,12 +13,18 @@ enum AuthorRole {
   OPERATOR
 }
 
+enum DialogStatus {
+  OPEN
+  RESOLVED
+}
+
 model Dialog {
-  id         String    @id @default(uuid())
+  id         String       @id @default(uuid())
   clientName String
+  status     DialogStatus @default(OPEN)
   messages   Message[]
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   @@index([updatedAt])
 }

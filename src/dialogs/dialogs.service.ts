@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { toChatDialog } from '../common/chat.mappers';
-import { ChatDialog } from '../common/chat.types';
-import { Dialog } from '../generated/prisma/client';
+import { ChatDialog, ChatDialogStatus } from '../common/chat.types';
+import { Dialog, DialogStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDialogDto } from './dto/create-dialog.dto';
 import { CentrifugoService } from '../realtime/centrifugo.service';
@@ -54,6 +54,31 @@ export class DialogsService {
     }
 
     return toChatDialog(dialog);
+  }
+
+  async updateStatus(
+    id: string,
+    status: ChatDialogStatus,
+  ): Promise<ChatDialog> {
+    await this.findRawByIdOrThrow(id);
+
+    const dialog = await this.prisma.dialog.update({
+      where: { id },
+      data: { status: status.toUpperCase() as DialogStatus },
+      include: LAST_MESSAGE_INCLUDE,
+    });
+    const chatDialog = toChatDialog(dialog);
+
+    await this.centrifugoService.publish(`dialog:${id}`, {
+      type: 'dialog.updated',
+      payload: chatDialog,
+    });
+    await this.centrifugoService.publish('operator:dialogs', {
+      type: 'dialog.updated',
+      payload: chatDialog,
+    });
+
+    return chatDialog;
   }
 
   /** Сырая модель без DTO-маппинга */

@@ -11,6 +11,16 @@
   "channel": {
     "without_namespace": {
       "allow_subscribe_for_client": true
-    }
+    },
+    "namespaces": [
+      {
+        "name": "dialog",
+        "allow_subscribe_for_client": true
+      },
+      {
+        "name": "operator",
+        "allow_subscribe_for_client": true
+      }
+    ]
   }
 }

@@ -22,6 +22,7 @@ export function toChatDialog(
   return {
     id: dialog.id,
     clientName: dialog.clientName,
+    status: dialog.status.toLowerCase() as ChatDialog['status'],
     createdAt: dialog.createdAt.toISOString(),
     updatedAt: dialog.updatedAt.toISOString(),
     lastMessage,
