@@ -1,0 +1,36 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AuthorRole {
+  CLIENT
+  OPERATOR
+}
+
+model Dialog {
+  id         String    @id @default(uuid())
+  clientName String
+  messages   Message[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([updatedAt])
+}
+
+model Message {
+  id         String     @id @default(uuid())
+  dialogId   String
+  dialog     Dialog     @relation(fields: [dialogId], references: [id], onDelete: Cascade)
+  authorRole AuthorRole
+  authorName String
+  text       String     @db.Text
+  createdAt  DateTime   @default(now())
+
+  @@index([dialogId, createdAt])
+}
