@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ChatMessage } from '../common/chat.types';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessagesService } from './messages.service';
 
+@ApiTags('messages')
 @Controller('dialogs/:dialogId/messages')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}

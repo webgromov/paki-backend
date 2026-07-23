@@ -4,6 +4,7 @@ import { ChatDialog } from '../common/chat.types';
 import { Dialog } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDialogDto } from './dto/create-dialog.dto';
+import { CentrifugoService } from '../realtime/centrifugo.service';
 
 const LAST_MESSAGE_INCLUDE = {
   messages: {
@@ -14,14 +15,23 @@ const LAST_MESSAGE_INCLUDE = {
 
 @Injectable()
 export class DialogsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly centrifugoService: CentrifugoService,
+  ) {}
 
   async create(dto: CreateDialogDto): Promise<ChatDialog> {
     const dialog = await this.prisma.dialog.create({
       data: { clientName: dto.clientName },
     });
+    const chatDialog = toChatDialog(dialog);
 
-    return toChatDialog(dialog);
+    await this.centrifugoService.publish('operator:dialogs', {
+      type: 'dialog.created',
+      payload: chatDialog,
+    });
+
+    return chatDialog;
   }
 
   async findAll(): Promise<ChatDialog[]> {

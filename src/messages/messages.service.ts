@@ -1,22 +1,24 @@
 import { Injectable } from '@nestjs/common';
-import { toChatMessage } from '../common/chat.mappers';
+import { toChatDialog, toChatMessage } from '../common/chat.mappers';
 import { ChatMessage } from '../common/chat.types';
 import { AuthorRole } from '../generated/prisma/client';
 import { DialogsService } from '../dialogs/dialogs.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { CentrifugoService } from '../realtime/centrifugo.service';
 
 @Injectable()
 export class MessagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dialogsService: DialogsService,
+    private readonly centrifugoService: CentrifugoService,
   ) {}
 
   async create(dialogId: string, dto: CreateMessageDto): Promise<ChatMessage> {
     await this.dialogsService.findRawByIdOrThrow(dialogId);
 
-    const [message] = await this.prisma.$transaction([
+    const [message, dialog] = await this.prisma.$transaction([
       this.prisma.message.create({
         data: {
           dialogId,
@@ -31,7 +33,19 @@ export class MessagesService {
       }),
     ]);
 
-    return toChatMessage(message);
+    const chatMessage = toChatMessage(message);
+    const chatDialog = toChatDialog({ ...dialog, messages: [message] });
+
+    await this.centrifugoService.publish(`dialog:${dialogId}`, {
+      type: 'message.created',
+      payload: chatMessage,
+    });
+    await this.centrifugoService.publish('operator:dialogs', {
+      type: 'dialog.updated',
+      payload: chatDialog,
+    });
+
+    return chatMessage;
   }
 
   async findAllByDialog(dialogId: string): Promise<ChatMessage[]> {
